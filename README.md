@@ -5,11 +5,15 @@ This is an implementation of P-DQN, a reinforcement learning algorithm designed 
 ## Quick Start
 
 ```bash
-python train_paradqn.py
+git clone https://github.com/ZhBF/ParaDQN.git
+cd ParaDQN
+pip install -r requirements.txt
+python main.py
 ```
 
 ## To Do Tasks
-[ ] Edit README with Quick Start instructions
+[x] Edit README with Quick Start instructions
+[ ] Add requirements.txt file
 [ ] Add command line arguments for training script
 [ ] Implement more efficient storage in Replay Buffer
 [ ] Consider bounding and shifting action parameters (refer to DDPG practices)
