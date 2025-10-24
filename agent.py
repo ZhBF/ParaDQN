@@ -15,12 +15,12 @@ class ParaDQNAgent:
                  state_dim: int,
                  actions_num: int,
                  actions_param_dim: list,
-                 device: str = "cpu",
-                 lr_q: float = 1e-4,
-                 lr_actor: float = 1e-3,
-                 gamma: float = 0.99,
-                 tau_q: float = 0.005,
-                 tau_actor: float = 0.005):
+                 device: str,
+                 gamma: float,
+                 lr_q: float,
+                 lr_actor: float,
+                 tau_q: float,
+                 tau_actor: float):
         """ Initialize ParaDQNAgent.
         
         Inputs:
@@ -66,7 +66,6 @@ class ParaDQNAgent:
         if np.random.rand() < epsilon:
             a_idx = np.random.randint(0, self.actions_num)
             params = np.random.uniform(-1.0, 1.0, size=(self.param_dim,))
-            # a_param = self._extract_params_for_action(a_idx, params)
             a_param = params
             return int(a_idx), a_param
 
@@ -75,7 +74,6 @@ class ParaDQNAgent:
         q_vals = self.q_net(s, params)   # (1, actions_num)
         q_vals = q_vals.cpu().numpy()[0]
         best_a_idx = int(q_vals.argmax())
-        # best_a_param = self._extract_params_for_action(best_a_idx, params.cpu().numpy()[0])
         best_a_param = params.cpu().numpy()[0]
         return best_a_idx, best_a_param
 
@@ -107,8 +105,6 @@ class ParaDQNAgent:
         rewards = torch.tensor(rewards, dtype=torch.float32, device=self.device)
         next_states = torch.tensor(next_states, dtype=torch.float32, device=self.device)
         dones = torch.tensor(dones, dtype=torch.float32, device=self.device)
-
-        batch_size = states.shape[0]
 
         with torch.no_grad():
             next_params = self.actor_target(next_states)  # (batch, param_dim)

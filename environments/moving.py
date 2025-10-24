@@ -7,6 +7,9 @@ import gym_hybrid
 class MovingEnv:
     def __init__(self):
         self.env = gym.make("Moving-v0")
+        self.state_dim = 10
+        self.num_actions = 3
+        self.param_dim_list = [1, 1, 0]
         self.param_dim_total = 2
 
     def reset(self):

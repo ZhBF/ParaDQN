@@ -12,25 +12,17 @@ Adaptation notes:
 """
 
 import os
-import time
 import shutil
-from typing import List, Tuple, Optional
+from pathlib import Path
+from typing import Optional
 import numpy as np
-
-# import gym
-# import gym_hybrid
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from agent import ParaDQNAgent
 from replay_buffer import ReplayBuffer
-from environments.moving import MovingEnv
-from environments.sliding import SlidingEnv
-from environments.testing import TestEnv
 
 
-def save_checkpoint(
-    path: str, agent: ParaDQNAgent, episode: int = 0, total_steps: int = 0
-):
+def save_checkpoint(path: str, agent: ParaDQNAgent, episode: int = 0, total_steps: int = 0):
     state = {
         "episode": int(episode),
         "total_steps": int(total_steps),
@@ -44,25 +36,17 @@ def save_checkpoint(
 
 def load_checkpoint(path: str, agent: ParaDQNAgent):
     try:
-        ck = torch.load(path, map_location="cpu")
+        ck = torch.load(path, map_location=agent.device)
         if "q_state_dict" in ck:
             agent.q_net.load_state_dict(ck["q_state_dict"])
         if "actor_state_dict" in ck:
             agent.actor.load_state_dict(ck["actor_state_dict"])
-        if (
-            "q_optimizer" in ck
-            and getattr(agent, "q_optimizer", None) is not None
-            and ck["q_optimizer"] is not None
-        ):
+        if "q_optimizer" in ck and getattr(agent, "q_optimizer", None) is not None and ck["q_optimizer"] is not None:
             try:
                 agent.q_optimizer.load_state_dict(ck["q_optimizer"])
             except Exception:
                 pass
-        if (
-            "actor_optimizer" in ck
-            and getattr(agent, "actor_optimizer", None) is not None
-            and ck["actor_optimizer"] is not None
-        ):
+        if "actor_optimizer" in ck and getattr(agent, "actor_optimizer", None) is not None and ck["actor_optimizer"] is not None:
             try:
                 agent.actor_optimizer.load_state_dict(ck["actor_optimizer"])
             except Exception:
@@ -91,38 +75,42 @@ def train(
     env,
     agent: ParaDQNAgent,
     buffer: ReplayBuffer,
-    episodes: int = 500,
-    batch_size: int = 64,
-    train_freq: int = 1,
-    # max_steps_per_episode: int = 500,
-    eval_interval: int = 20,
-    writer: Optional[SummaryWriter] = None,
-    checkpoint_dir: Optional[str] = None,
-    save_every: int = 50,
+    writer: SummaryWriter,
+    episodes: int,
+    batch_size: int,
+    train_freq: int,
+    eval_interval: int,
+    save_interval: int,
+    epsilon_start: float,
+    epsilon_end: float,
+    epsilon_decay_steps: int,
+    checkpoint_dir: str,
     resume_from: Optional[str] = None,
 ):
     total_steps = 0
     rewards_log = []
     start_episode = 1
 
-    if resume_from is None and checkpoint_dir is not None:
-        latest = os.path.join(checkpoint_dir, "latest.pth")
-        if os.path.exists(latest):
-            resume_from = latest
+    # resume from checkpoint if provided
     if resume_from is not None and os.path.exists(resume_from):
-        print(f"Loading checkpoint from {resume_from}")
-        ck = load_checkpoint(resume_from, agent)
-        if ck is not None:
-            total_steps = ck.get("total_steps", 0)
-            start_episode = ck.get("episode", 1) + 1
-            print(f"Resuming from episode {start_episode}, total_steps={total_steps}")
+        resume_path = Path(resume_from)
+        if resume_path.is_dir():
+            resume_path = resume_path / "latest.pth"
+        if resume_path.exists():
+            print(f"Loading checkpoint from {str(resume_path)}")
+            ck = load_checkpoint(str(resume_path), agent)
+            if ck is not None:
+                total_steps = ck.get("total_steps", 0)
+                start_episode = ck.get("episode", 1) + 1
+                print(f"Resuming from episode {start_episode}, total_steps={total_steps}")
 
-    for ep in range(1, episodes + 1):
+    # main training loop   
+    for ep in range(start_episode, episodes + 1):
         s = env.reset()
         ep_reward = 0.0
         done = False
         while not done:
-            eps = max(0.05, 1.0 - total_steps / 5000.0)
+            eps = max(epsilon_end, epsilon_start - total_steps / epsilon_decay_steps)
             a_idx, a_param = agent.select_action(s, epsilon=eps)
             s_, r, done, _ = env.step((a_idx, a_param))
             buffer.push(
@@ -144,9 +132,7 @@ def train(
                     if "q_loss" in info:
                         writer.add_scalar("loss/q_loss", info["q_loss"], total_steps)
                     if "actor_loss" in info:
-                        writer.add_scalar(
-                            "loss/actor_loss", info["actor_loss"], total_steps
-                        )
+                        writer.add_scalar("loss/actor_loss", info["actor_loss"], total_steps)
                     writer.add_scalar("train/epsilon", eps, total_steps)
                     writer.add_scalar("train/replay_size", len(buffer), total_steps)
 
@@ -157,9 +143,7 @@ def train(
 
         if ep % eval_interval == 0:
             mean_r, std_r = evaluate(env, agent, episodes=5)
-            print(
-                f"Ep {ep}/{episodes}  total_steps={total_steps}  recent_reward={np.mean(rewards_log[-eval_interval:]):.3f}  eval_mean={mean_r:.3f} +/- {std_r:.3f}"
-            )
+            print(f"Ep {ep}/{episodes}  total_steps={total_steps}  recent_reward={np.mean(rewards_log[-eval_interval:]):.3f}  eval_mean={mean_r:.3f} +/- {std_r:.3f}")
             if writer:
                 writer.add_scalar("eval/mean_return", mean_r, ep)
                 writer.add_scalar("eval/std_return", std_r, ep)
@@ -167,7 +151,7 @@ def train(
         if writer:
             writer.add_scalar("episode/reward", ep_reward, ep)
 
-        if checkpoint_dir and ep % save_every == 0:
+        if checkpoint_dir and ep % save_interval == 0:
             os.makedirs(checkpoint_dir, exist_ok=True)
             path = os.path.join(checkpoint_dir, f"ck_ep{ep}.pth")
             save_checkpoint(path, agent, episode=ep, total_steps=total_steps)
@@ -175,54 +159,3 @@ def train(
             shutil.copy(path, latest)
 
     return rewards_log
-
-
-def main():
-    # state_dim = 4
-    # param_dim_list = [1, 1]
-    # num_actions = len(param_dim_list)
-    # env = TestEnv(state_dim=state_dim, num_actions=num_actions, param_dim_list=param_dim_list, max_steps=20)
-    # env = SlidingEnv()
-    env = MovingEnv()
-    state_dim = 10
-    param_dim_list = [1, 1, 0]
-    num_actions = len(param_dim_list)
-
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    agent = ParaDQNAgent(
-        state_dim=state_dim,
-        actions_num=num_actions,
-        actions_param_dim=param_dim_list,
-        device=device,
-    )
-    buffer = ReplayBuffer(
-        capacity=20000, state_dim=state_dim, param_dim=sum(param_dim_list)
-    )
-
-    run_dir = os.path.join(os.path.dirname(__file__), "runs", f"run_{int(time.time())}")
-    writer = SummaryWriter(log_dir=os.path.join(run_dir, "logs"))
-    checkpoint_dir = os.path.join(run_dir, "checkpoints")
-    t0 = time.time()
-    train(
-        env,
-        agent,
-        buffer,
-        episodes=int(5e5),
-        batch_size=64,
-        eval_interval=20,
-        writer=writer,
-        checkpoint_dir=checkpoint_dir,
-        save_every=60,
-    )
-    print("Training finished in", time.time() - t0)
-    writer.close()
-
-
-if __name__ == "__main__":
-    main()
-
-# 3646873 sliding-v0
-# 3649254 moving-v0
-
-# 3743766 sliding
-# 3744001 moving

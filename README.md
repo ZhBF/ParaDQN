@@ -10,6 +10,7 @@ python train_paradqn.py
 
 ## To Do Tasks
 [ ] Edit README with Quick Start instructions
+[ ] Add command line arguments for training script
 [ ] Implement more efficient storage in Replay Buffer
 [ ] Consider bounding and shifting action parameters (refer to DDPG practices)
 
