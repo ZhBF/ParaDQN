@@ -4,19 +4,40 @@ This is an implementation of P-DQN, a reinforcement learning algorithm designed 
 
 ## Quick Start
 
+First, clone this repository and install the required packages.
+
 ```bash
 git clone https://github.com/ZhBF/ParaDQN.git
 cd ParaDQN
 pip install -r requirements.txt
+cd ..
+```
+
+Then, install the `gym-hybrid` environment.
+
+```bash
+git clone https://github.com/thomashirtz/gym-hybrid.git
+cd gym-hybrid
+pip install .
+cd ..
+```
+
+Finally, run the training script.
+```bash
+cd ParaDQN
 python main.py
 ```
 
 ## To Do Tasks
 [x] Edit README with Quick Start instructions
-[ ] Add requirements.txt file
-[ ] Add command line arguments for training script
-[ ] Implement more efficient storage in Replay Buffer
+
+[x] Add requirements.txt file
+
+[x] Add command line arguments for training script
+
 [ ] Consider bounding and shifting action parameters (refer to DDPG practices)
+
+[ ] Implement more efficient storage in Replay Buffer
 
 ## Reference 
 [Parametrized Deep Q-Networks Learning: Reinforcement Learning with Discrete-Continuous Hybrid Action Space](https://arxiv.org/abs/1810.06394)

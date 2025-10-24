@@ -75,6 +75,7 @@ def main(args: argparse.Namespace):
         episodes=args.train_episodes,
         batch_size=args.batch_size,
         train_freq=args.train_freq,
+        eval_episodes=args.eval_episodes,
         eval_interval=args.eval_interval,
         save_interval=args.save_interval,
         epsilon_start=args.epsilon_start,
@@ -110,6 +111,7 @@ if __name__ == "__main__":
     parser.add_argument("--train_episodes", type=int, default=int(5e5), help="Number of training episodes.")
     parser.add_argument("--batch_size", type=int, default=64, help="Batch size for training.")
     parser.add_argument("--train_freq", type=int, default=1, help="Training frequency (in steps).")
+    parser.add_argument("--eval_episodes", type=int, default=5, help="Number of evaluation episodes.")
     parser.add_argument("--eval_interval", type=int, default=20, help="Evaluation interval (in episodes).")
     parser.add_argument("--save_interval", type=int, default=100, help="Model saving interval (in episodes).")
     parser.add_argument("--epsilon_start", type=float, default=1.0, help="Starting value of epsilon for epsilon-greedy.")

@@ -57,7 +57,7 @@ def load_checkpoint(path: str, agent: ParaDQNAgent):
         return None
 
 
-def evaluate(env, agent: ParaDQNAgent, episodes: int = 5):
+def evaluate(env, agent: ParaDQNAgent, episodes: int):
     returns = []
     for _ in range(episodes):
         s = env.reset()
@@ -79,6 +79,7 @@ def train(
     episodes: int,
     batch_size: int,
     train_freq: int,
+    eval_episodes: int,
     eval_interval: int,
     save_interval: int,
     epsilon_start: float,
@@ -142,7 +143,7 @@ def train(
         rewards_log.append(ep_reward)
 
         if ep % eval_interval == 0:
-            mean_r, std_r = evaluate(env, agent, episodes=5)
+            mean_r, std_r = evaluate(env, agent, episodes=eval_episodes)
             print(f"Ep {ep}/{episodes}  total_steps={total_steps}  recent_reward={np.mean(rewards_log[-eval_interval:]):.3f}  eval_mean={mean_r:.3f} +/- {std_r:.3f}")
             if writer:
                 writer.add_scalar("eval/mean_return", mean_r, ep)
@@ -157,5 +158,6 @@ def train(
             save_checkpoint(path, agent, episode=ep, total_steps=total_steps)
             latest = os.path.join(checkpoint_dir, "latest.pth")
             shutil.copy(path, latest)
+            print(f"Ep {ep}/{episodes}  Saved checkpoint to {path}.")
 
     return rewards_log
