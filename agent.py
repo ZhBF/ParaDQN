@@ -5,6 +5,7 @@ import torch.optim as optim
 import numpy as np
 from typing import Tuple
 from networks import QNetwork, ParamNetwork
+from gym import spaces
 
 
 class ParaDQNAgent:
@@ -12,9 +13,8 @@ class ParaDQNAgent:
     """
 
     def __init__(self,
-                 state_dim: int,
-                 actions_num: int,
-                 actions_param_dim: list,
+                 observation_space: spaces.Box,
+                 action_space: spaces.Tuple,
                  device: str,
                  gamma: float,
                  lr_q: float,
@@ -24,9 +24,8 @@ class ParaDQNAgent:
         """ Initialize ParaDQNAgent.
         
         Inputs:
-            - state_dim: dimension of state space
-            - actions_num: number of discrete actions
-            - actions_param_dim: list of parameter dimensions for each action
+            - observation_space: observation space of the environment
+            - action_space: action space of the environment (discrete + continuous)
             - device: device to run the networks on
             - lr_q: learning rate for Q network
             - lr_actor: learning rate for actor/param network
@@ -34,15 +33,15 @@ class ParaDQNAgent:
             - tau: soft update factor for target networks
         """
         
-        self.state_dim = state_dim
-        self.actions_num = actions_num
-        self.actions_param_dim = actions_param_dim
-        self.param_dim = int(sum(actions_param_dim))
+        self.state_dim = observation_space.shape[0]
+        self.actions_num = action_space[0].n
+        self.param_dim = action_space[1].shape[0]
+        self.param_space = action_space[1]
         self.device = torch.device(device)
 
-        self.q_net = QNetwork(state_dim, actions_num, self.param_dim).to(self.device)
+        self.q_net = QNetwork(self.state_dim, self.actions_num, self.param_dim).to(self.device)
         self.q_target = copy.deepcopy(self.q_net).to(self.device)
-        self.actor = ParamNetwork(state_dim, self.param_dim).to(self.device)
+        self.actor = ParamNetwork(self.state_dim, self.param_space).to(self.device)
         self.actor_target = copy.deepcopy(self.actor).to(self.device)
 
         self.q_optimizer = optim.Adam(self.q_net.parameters(), lr=lr_q)
@@ -76,17 +75,6 @@ class ParaDQNAgent:
         best_a_idx = int(q_vals.argmax())
         best_a_param = params.cpu().numpy()[0]
         return best_a_idx, best_a_param
-
-    def _extract_params_for_action(self, action_idx: int, params: np.ndarray) -> np.ndarray:
-        """ Extract parameter slice for given action index from full parameter vector.
-        """
-        a_param_start = sum(self.actions_param_dim[:action_idx])
-        a_param_size = self.actions_param_dim[action_idx]
-        if a_param_size > 0:
-            a_param = params[a_param_start: a_param_start + a_param_size]
-        else:
-            a_param = np.zeros((0,), dtype=np.float32)
-        return a_param
 
     def train_step(self, batch, q_loss_coef: float = 1.0, actor_loss_coef: float = 1.0):
         """ Perform one training step from a batch.

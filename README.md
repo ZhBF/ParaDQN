@@ -35,7 +35,7 @@ python main.py
 
 [x] Add command line arguments for training script
 
-[ ] Consider bounding and shifting action parameters (refer to DDPG practices)
+[x] Consider bounding and shifting action parameters
 
 [ ] Implement more efficient storage in Replay Buffer
 

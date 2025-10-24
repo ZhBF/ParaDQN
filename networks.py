@@ -2,6 +2,7 @@ import math
 import torch
 import torch.nn as nn
 from typing import List, Optional
+from gym import spaces
 
 
 class QNetwork(nn.Module):
@@ -68,14 +69,19 @@ class ParamNetwork(nn.Module):
         - state: (batch, state_dim)
     Output:
         - action_param: (batch, param_dim)
-
-    TODO: add action bounds handling and shifting if needed.
     """
 
-    def __init__(self, state_dim: int, param_dim: int, hidden_sizes: Optional[List[int]] = None):
+    def __init__(self, state_dim: int, param_space: spaces.Box, 
+                 hidden_sizes: Optional[List[int]] = None):
         """ Initialize ParamNetwork.
         """
         super().__init__()
+        self.param_dim = param_space.shape[0]
+        # self.param_low = torch.tensor(param_space.low, dtype=torch.float32)
+        # self.param_high = torch.tensor(param_space.high, dtype=torch.float32)
+        self.register_buffer('param_low', torch.tensor(param_space.low, dtype=torch.float32))
+        self.register_buffer('param_high', torch.tensor(param_space.high, dtype=torch.float32))
+
         if hidden_sizes is None:
             hidden_sizes = [256, 256]
         
@@ -87,7 +93,7 @@ class ParamNetwork(nn.Module):
             last_size = hidden_size
         
         self.net = nn.Sequential(*layers)
-        self.actor = nn.Linear(last_size, param_dim)
+        self.actor = nn.Linear(last_size, self.param_dim)
         self._initialize_weights()
         
     def _initialize_weights(self):
@@ -105,5 +111,6 @@ class ParamNetwork(nn.Module):
     def forward(self, state: torch.Tensor) -> torch.Tensor:
         x = self.net(state)
         x = self.actor(x)
-        x = torch.tanh(x) # Squash to [-1, 1]
+        x = torch.sigmoid(x)
+        x = self.param_low + x * (self.param_high - self.param_low)
         return x

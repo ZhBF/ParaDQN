@@ -1,7 +1,6 @@
 from datetime import datetime
 from environments.moving import MovingEnv
 from environments.sliding import SlidingEnv
-from environments.testing import TestEnv
 import torch
 from replay_buffer import ReplayBuffer
 from agent import ParaDQNAgent
@@ -26,9 +25,7 @@ def main(args: argparse.Namespace):
         print("Using CPU")
 
     # environment
-    if args.env == "testing":
-        env = TestEnv()
-    elif args.env == "sliding":
+    if args.env == "sliding":
         env = SlidingEnv()
     elif args.env == "moving":
         env = MovingEnv()
@@ -44,9 +41,8 @@ def main(args: argparse.Namespace):
 
     # agent
     agent = ParaDQNAgent(
-        state_dim=env.state_dim,
-        actions_num=env.num_actions,
-        actions_param_dim=env.param_dim_list,
+        observation_space=env.observation_space,
+        action_space=env.action_space,
         device=device,
         gamma=args.gamma,
         lr_q=args.lr_q,
@@ -62,6 +58,7 @@ def main(args: argparse.Namespace):
         f"run_{args.env}_{args.seed}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
     )
     os.makedirs(run_dir)
+    print("Run dir:", run_dir)
     writer = SummaryWriter(log_dir=os.path.join(run_dir, "logs"))
     checkpoint_dir = os.path.join(run_dir, "checkpoints")
     os.makedirs(checkpoint_dir)
@@ -97,7 +94,7 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=str, default="cuda", help="Device to use (cpu or cuda).")
     
     # environment settings
-    parser.add_argument("--env", type=str, default="moving", help="Environment to use (testing, sliding, moving).")
+    parser.add_argument("--env", type=str, default="moving", help="Environment to use (moving, sliding).")
     
     # agent settings
     parser.add_argument("--gamma", type=float, default=0.99, help="Discount factor.")

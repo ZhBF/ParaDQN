@@ -11,6 +11,8 @@ class MovingEnv:
         self.num_actions = 3
         self.param_dim_list = [1, 1, 0]
         self.param_dim_total = 2
+        self.action_space = self.env.action_space
+        self.observation_space = self.env.observation_space
 
     def reset(self):
         s = self.env.reset()
