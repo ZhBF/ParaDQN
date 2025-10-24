@@ -105,4 +105,5 @@ class ParamNetwork(nn.Module):
     def forward(self, state: torch.Tensor) -> torch.Tensor:
         x = self.net(state)
         x = self.actor(x)
+        x = torch.tanh(x) # Squash to [-1, 1]
         return x

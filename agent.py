@@ -16,10 +16,11 @@ class ParaDQNAgent:
                  actions_num: int,
                  actions_param_dim: list,
                  device: str = "cpu",
-                 lr_q: float = 1e-3,
+                 lr_q: float = 1e-4,
                  lr_actor: float = 1e-3,
                  gamma: float = 0.99,
-                 tau: float = 0.005):
+                 tau_q: float = 0.005,
+                 tau_actor: float = 0.005):
         """ Initialize ParaDQNAgent.
         
         Inputs:
@@ -48,7 +49,8 @@ class ParaDQNAgent:
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=lr_actor)
 
         self.gamma = gamma
-        self.tau = tau
+        self.tau_q = tau_q
+        self.tau_actor = tau_actor
 
     @torch.no_grad()
     def select_action(self, state: np.ndarray, epsilon: float = 0.0) -> Tuple[int, np.ndarray]:
@@ -64,7 +66,8 @@ class ParaDQNAgent:
         if np.random.rand() < epsilon:
             a_idx = np.random.randint(0, self.actions_num)
             params = np.random.uniform(-1.0, 1.0, size=(self.param_dim,))
-            a_param = self._extract_params_for_action(a_idx, params)
+            # a_param = self._extract_params_for_action(a_idx, params)
+            a_param = params
             return int(a_idx), a_param
 
         s = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0) # (1, state_dim)
@@ -72,7 +75,8 @@ class ParaDQNAgent:
         q_vals = self.q_net(s, params)   # (1, actions_num)
         q_vals = q_vals.cpu().numpy()[0]
         best_a_idx = int(q_vals.argmax())
-        best_a_param = self._extract_params_for_action(best_a_idx, params.cpu().numpy()[0])
+        # best_a_param = self._extract_params_for_action(best_a_idx, params.cpu().numpy()[0])
+        best_a_param = params.cpu().numpy()[0]
         return best_a_idx, best_a_param
 
     def _extract_params_for_action(self, action_idx: int, params: np.ndarray) -> np.ndarray:
@@ -129,14 +133,14 @@ class ParaDQNAgent:
         (actor_loss * actor_loss_coef).backward()
         self.actor_optimizer.step()
 
-        self.soft_update(self.q_target, self.q_net)
-        self.soft_update(self.actor_target, self.actor)
+        self.soft_update(self.q_target, self.q_net, self.tau_q)
+        self.soft_update(self.actor_target, self.actor, self.tau_actor)
 
         return {'q_loss': q_loss.item(), 'actor_loss': actor_loss.item()}
 
-    def soft_update(self, target_net: nn.Module, net: nn.Module):
+    def soft_update(self, target_net: nn.Module, net: nn.Module, tau: float):
         """ Soft update target network parameters.
         """
         for target_param, param in zip(target_net.parameters(), net.parameters()):
-            target_param.data.mul_(1.0 - self.tau)
-            target_param.data.add_(self.tau * param.data)
+            target_param.data.mul_(1.0 - tau)
+            target_param.data.add_(tau * param.data)
