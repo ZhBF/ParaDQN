@@ -98,8 +98,8 @@ if __name__ == "__main__":
     
     # agent settings
     parser.add_argument("--gamma", type=float, default=0.99, help="Discount factor.")
-    parser.add_argument("--lr_q", type=float, default=1e-4, help="Learning rate for Q network (lr_q << lr_actor).")
-    parser.add_argument("--lr_actor", type=float, default=1e-3, help="Learning rate for actor/param network (lr_q << lr_actor).")
+    parser.add_argument("--lr_q", type=float, default=1e-3, help="Learning rate for Q network.")
+    parser.add_argument("--lr_actor", type=float, default=1e-4, help="Learning rate for actor/param network.")
     parser.add_argument("--tau_q", type=float, default=0.005, help="Soft update factor for Q target network.")
     parser.add_argument("--tau_actor", type=float, default=0.005, help="Soft update factor for actor target network.")
 

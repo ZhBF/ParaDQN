@@ -3,3 +3,4 @@ runs/
 checkpoints/
 .vscode/
 *.log
+tensorboard_visualization.png
