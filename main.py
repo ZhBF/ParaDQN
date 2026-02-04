@@ -1,6 +1,5 @@
 from datetime import datetime
-from environments.moving import MovingEnv
-from environments.sliding import SlidingEnv
+from environments import make_env
 import torch
 from replay_buffer import ReplayBuffer
 from agent import ParaDQNAgent
@@ -9,6 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 from train import train
 import argparse
 import numpy as np
+from vec_env import SubprocVecEnv
 
 
 def main(args: argparse.Namespace):
@@ -24,25 +24,26 @@ def main(args: argparse.Namespace):
         device = "cpu"
         print("Using CPU")
 
-    # environment
-    if args.env == "sliding":
-        env = SlidingEnv()
-    elif args.env == "moving":
-        env = MovingEnv()
+    # environment (single env for specs)
+    spec_env = make_env(args.env)
+    if args.num_envs > 1:
+        env = SubprocVecEnv(args.env, args.num_envs, seed=args.seed)
+        eval_env = SubprocVecEnv(args.env, args.num_envs, seed=args.seed + 10000)
     else:
-        raise ValueError(f"Unknown environment: {args.env}")
+        env = make_env(args.env)
+        eval_env = make_env(args.env)
 
     # buffer
     buffer = ReplayBuffer(
         capacity=args.replay_capacity,
-        state_dim=env.state_dim,
-        param_dim=env.param_dim_total,
+        state_dim=spec_env.state_dim,
+        param_dim=spec_env.param_dim_total,
     )
 
     # agent
     agent = ParaDQNAgent(
-        observation_space=env.observation_space,
-        action_space=env.action_space,
+        observation_space=spec_env.observation_space,
+        action_space=spec_env.action_space,
         device=device,
         gamma=args.gamma,
         lr_q=args.lr_q,
@@ -82,9 +83,14 @@ def main(args: argparse.Namespace):
         epsilon_decay_steps=args.epsilon_decay_steps,
         checkpoint_dir=checkpoint_dir,
         resume_from=args.resume_from,
+        eval_env=eval_env,
     )
 
     writer.close()
+    if hasattr(env, "close"):
+        env.close()
+    if hasattr(eval_env, "close"):
+        eval_env.close()
     print("Training completed.")
 
 
@@ -119,6 +125,7 @@ if __name__ == "__main__":
     parser.add_argument("--epsilon_end", type=float, default=0.05, help="Final value of epsilon for epsilon-greedy.")
     parser.add_argument("--epsilon_decay_steps", type=int, default=5000, help="Number of steps to decay epsilon.")
     parser.add_argument("--resume_from", type=str, default=None, help="Path to resume checkpoint.")
+    parser.add_argument("--num_envs", type=int, default=1, help="Number of parallel environments.")
     
     args = parser.parse_args()
     main(args)
