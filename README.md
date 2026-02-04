@@ -122,10 +122,11 @@ The agent learns to solve hybrid action space tasks effectively. Training progre
 - [x] Add requirements.txt file
 - [x] Add command line arguments for training script
 - [x] Consider bounding and shifting action parameters
-- [ ] Implement more efficient storage in Replay Buffer
-- [ ] Add evaluation script
-- [ ] Support for additional environments
+- [x] Implement more efficient storage in Replay Buffer
+- [ ] Add arguments for network architecture customization
+- [ ] Add render script
 - [ ] Implement prioritized experience replay
+- [ ] Enable multi-processing for faster training
 
 ## 📝 Citation
 
