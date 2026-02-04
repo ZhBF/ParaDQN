@@ -49,6 +49,8 @@ def main(args: argparse.Namespace):
         lr_actor=args.lr_actor,
         tau_q=args.tau_q,
         tau_actor=args.tau_actor,
+        q_hidden_sizes=args.q_hidden_sizes,
+        actor_hidden_sizes=args.actor_hidden_sizes,
     )
 
     # logging
@@ -102,6 +104,8 @@ if __name__ == "__main__":
     parser.add_argument("--lr_actor", type=float, default=1e-4, help="Learning rate for actor/param network.")
     parser.add_argument("--tau_q", type=float, default=0.005, help="Soft update factor for Q target network.")
     parser.add_argument("--tau_actor", type=float, default=0.005, help="Soft update factor for actor target network.")
+    parser.add_argument("--q_hidden_sizes", type=int, nargs="+", default=[256, 256], help="Hidden layer sizes for Q network.")
+    parser.add_argument("--actor_hidden_sizes", type=int, nargs="+", default=[256, 256], help="Hidden layer sizes for actor/param network.")
 
     # training settings
     parser.add_argument("--replay_capacity", type=int, default=20000, help="Replay buffer capacity.")

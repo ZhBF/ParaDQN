@@ -20,7 +20,9 @@ class ParaDQNAgent:
                  lr_q: float,
                  lr_actor: float,
                  tau_q: float,
-                 tau_actor: float):
+                 tau_actor: float,
+                 q_hidden_sizes: list = None,
+                 actor_hidden_sizes: list = None):
         """ Initialize ParaDQNAgent.
         
         Inputs:
@@ -30,8 +32,15 @@ class ParaDQNAgent:
             - lr_q: learning rate for Q network
             - lr_actor: learning rate for actor/param network
             - gamma: discount factor
-            - tau: soft update factor for target networks
+            - tau_q: soft update factor for Q target network
+            - tau_actor: soft update factor for actor target network
+            - q_hidden_sizes: list of hidden layer sizes for Q network
+            - actor_hidden_sizes: list of hidden layer sizes for actor/param network
         """
+        if q_hidden_sizes is None:
+            q_hidden_sizes = [256, 256]
+        if actor_hidden_sizes is None:
+            actor_hidden_sizes = [256, 256]
         
         self.state_dim = observation_space.shape[0]
         self.actions_num = action_space[0].n
@@ -39,9 +48,9 @@ class ParaDQNAgent:
         self.param_space = action_space[1]
         self.device = torch.device(device)
 
-        self.q_net = QNetwork(self.state_dim, self.actions_num, self.param_dim).to(self.device)
+        self.q_net = QNetwork(self.state_dim, self.actions_num, self.param_dim, hidden_sizes=q_hidden_sizes).to(self.device)
         self.q_target = copy.deepcopy(self.q_net).to(self.device)
-        self.actor = ParamNetwork(self.state_dim, self.param_space).to(self.device)
+        self.actor = ParamNetwork(self.state_dim, self.param_space, hidden_sizes=actor_hidden_sizes).to(self.device)
         self.actor_target = copy.deepcopy(self.actor).to(self.device)
 
         self.q_optimizer = optim.Adam(self.q_net.parameters(), lr=lr_q)
