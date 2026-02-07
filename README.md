@@ -15,14 +15,6 @@ A PyTorch implementation of **Parametrized Deep Q-Networks (P-DQN)**, a reinforc
 - **Checkpoint System**: Automatic saving and loading of model checkpoints
 - **Multiple Environments**: Support for various gym-hybrid environments (Moving, Sliding, etc.)
 
-## 📋 Requirements
-
-- Python 3.8+
-- PyTorch
-- NumPy
-- Gym
-- Tensorboard
-
 ## 🚀 Quick Start
 
 ### 1. Clone the Repository
@@ -62,22 +54,6 @@ python main.py
 python main.py --env_name moving --episodes 2000 --lr 0.001
 ```
 
-## 📊 Project Structure
-
-```
-ParaDQN/
-├── agent.py              # P-DQN agent implementation
-├── networks.py           # Neural network architectures
-├── replay_buffer.py      # Experience replay buffer
-├── train.py              # Training loop and logic
-├── main.py               # Entry point with argument parsing
-├── requirements.txt      # Python dependencies
-├── environments/         # Custom environment wrappers
-│   ├── moving.py
-│   └── sliding.py
-└── runs/                 # Training logs and checkpoints
-```
-
 ## 🎮 Usage
 
 ### Training Arguments
@@ -115,10 +91,6 @@ The agent learns to solve hybrid action space tasks effectively. Training progre
 - Q-value estimates
 - Loss curves
 - Success rates
-
-## 🔧 To Do
-
-- [ ] Enable multi-processing for faster training
 
 ## 📝 Citation
 
